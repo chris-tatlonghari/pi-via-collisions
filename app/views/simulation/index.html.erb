@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pi via Collisions - Physics Simulation</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: white;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      }
+      
+      h1 {
+        text-align: center;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+      
+      .subtitle {
+        text-align: center;
+        font-size: 1.2em;
+        margin-bottom: 30px;
+        opacity: 0.9;
+      }
+      
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 30px;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .control-group {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+      }
+      
+      .control-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      
+      .control-group input {
+        width: 80px;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+        font-size: 14px;
+      }
+      
+      .button-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px 0 rgba(255, 107, 107, 0.4);
+      }
+      
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px 0 rgba(255, 107, 107, 0.6);
+      }
+      
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .canvas-container {
+        text-align: center;
+        margin: 30px 0;
+      }
+      
+      canvas {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      }
+      
+      .stats {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      
+      .stat-box {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        backdrop-filter: blur(5px);
+        min-width: 150px;
+      }
+      
+      .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #ffd700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+      
+      .stat-label {
+        font-size: 0.9em;
+        opacity: 0.9;
+        margin-top: 5px;
+      }
+      
+      .explanation {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 30px;
+        backdrop-filter: blur(5px);
+      }
+      
+      .explanation h3 {
+        margin-top: 0;
+        color: #ffd700;
+      }
+      
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" data-controller="simulation">
+      <h1>🥧 Pi via Collisions</h1>
+      <p class="subtitle">Discover the digits of π through perfectly elastic collisions!</p>
+      
+      <div class="controls">
+        <div class="control-group">
+          <label for="mass1">Small Block Mass:</label>
+          <input type="number" id="mass1" data-simulation-target="mass1" data-action="change->simulation#updateParameters" value="1" min="0.1" step="0.1">
+        </div>
+        
+        <div class="control-group">
+          <label for="mass2">Large Block Mass:</label>
+          <input type="number" id="mass2" data-simulation-target="mass2" data-action="change->simulation#updateParameters" value="100" min="1" step="1">
+        </div>
+        
+        <div class="control-group">
+          <label for="velocity">Initial Velocity:</label>
+          <input type="number" id="velocity" data-simulation-target="velocity" data-action="change->simulation#updateParameters" value="-2" step="0.1">
+        </div>
+        
+        <div class="control-group">
+          <label for="speed">Animation Speed:</label>
+          <input type="range" id="speed" data-simulation-target="speed" data-action="input->simulation#updateSpeed" min="1" max="10" value="5" style="width: 100px;">
+        </div>
+        
+        <div class="button-group">
+          <button data-simulation-target="startBtn" data-action="click->simulation#start">Start Simulation</button>
+          <button data-simulation-target="pauseBtn" data-action="click->simulation#pause" disabled>Pause</button>
+          <button data-simulation-target="resetBtn" data-action="click->simulation#reset">Reset</button>
+        </div>
+      </div>
+      
+      <div class="canvas-container">
+        <canvas data-simulation-target="canvas" width="800" height="300"></canvas>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value" data-simulation-target="collisionCount">0</div>
+          <div class="stat-label">Total Collisions</div>
+        </div>
+        
+        <div class="stat-box">
+          <div class="stat-value" data-simulation-target="wallCollisions">0</div>
+          <div class="stat-label">Wall Collisions</div>
+        </div>
+        
+        <div class="stat-box">
+          <div class="stat-value" data-simulation-target="blockCollisions">0</div>
+          <div class="stat-label">Block Collisions</div>
+        </div>
+        
+        <div class="stat-box">
+          <div class="stat-value" data-simulation-target="piDigits">3.14...</div>
+          <div class="stat-label">π Approximation</div>
+        </div>
+      </div>
+      
+      <div class="explanation">
+        <h3>How it works:</h3>
+        <p>
+          This simulation demonstrates a remarkable mathematical phenomenon discovered by Gregory Galperin. 
+          When a small block collides with a larger block (with mass as a power of 100 times greater), 
+          the total number of collisions equals the first digits of π!
+        </p>
+        <ul>
+          <li><strong>Mass ratio 1:100</strong> → 31 collisions → π ≈ 3.1</li>
+          <li><strong>Mass ratio 1:10,000</strong> → 314 collisions → π ≈ 3.14</li>
+          <li><strong>Mass ratio 1:1,000,000</strong> → 3141 collisions → π ≈ 3.141</li>
+        </ul>
+        <p>
+          Try different mass ratios that are powers of 100 (1, 100, 10000, 1000000) to see more digits of π emerge!
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
