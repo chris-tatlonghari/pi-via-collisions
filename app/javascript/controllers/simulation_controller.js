@@ -43,7 +43,7 @@ export default class extends Controller {
     // Get input values
     const mass1 = parseFloat(this.mass1Target.value) || 1
     const mass2 = parseFloat(this.mass2Target.value) || 100
-    const initialVelocity = parseFloat(this.velocityTarget.value) || -2
+    const initialVelocity = parseFloat(this.velocityTarget.value) || -100
     
     // Create blocks
     const blockHeight = 60
